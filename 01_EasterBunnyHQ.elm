@@ -1,7 +1,7 @@
 import Html exposing (..)
 
-import Maybe exposing (withDefault)
 
+main: Program Never Model Msg
 main = 
     Html.beginnerProgram { model = model, view = view, update = update }
 
@@ -64,13 +64,17 @@ view model =
         moves =
             requiredMoves
 
-        d = Debug.log "moves" moves
-
         endModel =
             moves |> newPos model
+
+        ( twiceX, twiceY ) =
+            moves |> findFirstLocationVisitedTwice model
+
+        d = Debug.log "locs" ( endModel, (twiceX, twiceY) )
     in
         div []
-            [ text ( "model one " ++ ( toString endModel ) )
+            [ div [] [ text ( "Minimum distance to Bunny HQ is: " ++ ( toString ( abs endModel.x + abs endModel.y ) ) ) ]
+            , div [] [ text ( "First location visited twice distance: " ++ ( toString ( abs twiceX + abs twiceY ) ) ) ]
             ]
     
     
@@ -78,7 +82,49 @@ newPos: Model -> List Movement -> Model
 newPos model movements =
     List.foldl reduce model movements
   
-  
+
+findFirstLocationVisitedTwice: Model -> List Movement -> ( Int, Int )
+findFirstLocationVisitedTwice model movements =
+    let
+        findAllPoints =
+            ( \cmd points ->
+                let
+                    lastPoint =
+                        points |> List.reverse |> List.head |> Maybe.withDefault (Model 0 0 0)
+
+                    newPoints =
+                        List.range 1 cmd.amount
+                            |> List.map
+                                ( \amount ->
+                                    reduce { dir = cmd.dir, amount = amount } lastPoint
+                                )
+                in
+                    List.append points newPoints
+            )
+
+        allLocations =
+            List.foldl findAllPoints [ model ] movements
+
+        points =
+            List.map ( \i -> ( i.x, i.y ) ) allLocations
+
+        repeatedLocations =
+            List.indexedMap (,) points
+                |> List.filter 
+                    ( \( idx, ( x, y ) ) ->
+                        let
+                            otherItems =
+                                List.drop ( idx + 1 ) points
+                        in
+                            List.member ( x, y ) otherItems
+                    )
+            
+        ( idx, firstPoint ) =
+            repeatedLocations |> List.head |> Maybe.withDefault ( 0, ( 0, 0 ) )
+    in
+        firstPoint
+
+
 reduce: Movement -> Model -> Model
 reduce move model =
     let
@@ -87,7 +133,7 @@ reduce move model =
                 Right ->
                     rem ( model.o + 1 ) 4
                 Left ->
-                    if (model.o - 1) < 0 then 0 else model.o - 1
+                    if (model.o - 1) < 0 then 3 else model.o - 1
 
         getMultiplier =
             (\c1 c2 ->
@@ -124,63 +170,8 @@ requiredMoves =
 
                 amount =
                     m |> String.dropLeft 1 |> String.toInt |> Result.withDefault 0
-
-                --d = Debug.log "parts" (dir, amount)
             in
                 { dir = if "R" == dir then Right else Left
                 , amount = amount
                 }
         )
-
-
-{--
-d1 = 5
-        d2 = 2
-        d3 = 12
-
-        modelOne =
-            [ Movement Right 2, Movement Left 3 ]
-                |> newPos model
-
-        modelTwo = 
-            [ Movement Right 2, Movement Right 2, Movement Right 2 ]
-                |> newPos model
-
-        modelThree =
-            [ Movement Right 5, Movement Left 5, Movement Right 5 , Movement Right 3 ]
-                |> newPos model
-
-        ( minX, maxX ) =
-            ( List.maximum [ modelOne.x - d1, modelTwo.x - d2, modelThree.x - d3 ] |> withDefault -1
-            , List.minimum [ modelOne.x + d1, modelTwo.x + d2, modelThree.x + d3 ] |> withDefault 1
-            )
-
-        ( minY, maxY ) =
-            ( List.maximum [ modelOne.y - d1, modelTwo.y - d2, modelThree.y - d3 ] |> withDefault -1
-            , List.minimum [ modelOne.y + d1, modelTwo.y + d2, modelThree.y + d3 ] |> withDefault 1
-            )
-
-        hasIntersect =
-            minX < maxX && minY < maxY
-
-        minDistance =
-            if hasIntersect then
-                List.minimum [ abs minX, abs minY, abs maxX, abs maxY ]
-            else
-                Nothing
-    in
-        div []
-            [ div [] [ text ( "Position one: " ++ (toString modelOne ) ) ]
-            , div [] [ text ( "Position two: " ++ (toString modelTwo ) ) ]
-            , div [] [ text ( "Position three: " ++ (toString modelThree ) ) ]
-            , ( if not hasIntersect then
-                    div [] [ text "unable to calculate" ]
-                else
-                    div[]
-                        [ div [] [ text ( "Min (X, Y) intersect: (" ++ (toString minX) ++ ", " ++ (toString minY) ++ ")" ) ]
-                        , div [] [ text ( "Max (X, Y) intersect: (" ++ (toString maxX) ++ ", " ++ (toString maxY) ++ ")" ) ]
-                        , div [] [ text ( "Minimum distance to HQ is: " ++ (toString minDistance) ) ]
-                        ]
-            )
-            ]
---}
