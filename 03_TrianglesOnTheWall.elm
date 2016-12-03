@@ -9,15 +9,13 @@ main =
 -- MODEL
 
 
-type alias Model = 
-    { possibleTriangles: Int
-    }
+type alias Model
+    = Int
 
 
 model : Model
 model =
-    { possibleTriangles = 0
-    }
+    0
 
 
 -- UPDATE
