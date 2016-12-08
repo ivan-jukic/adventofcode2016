@@ -85,7 +85,8 @@ view model =
                 , ( "width", "20px" )
                 , ( "height", "20px" )
                 , ( "background-color", ( if isOn then "#5bb8ff" else "#DDD" ) )
-                , ( "border", "1px solid #FFF" )
+                , ( "border-bottom", "1px solid #FFF" )
+                , ( "border-right", "1px solid #FFF" )
                 ]
             )
     in
