@@ -92,18 +92,6 @@ isOnlyLetters input =
     Regex.contains ( Regex.regex "^[A-Z]+$" ) input
 
 
-getMarkers: String -> List ( Int, Int )
-getMarkers input =
-    let
-        rgx =
-            Regex.regex "\\((\\d+)x(\\d+)\\)"
-
-        matches =
-            input |> Regex.find Regex.All rgx
-    in
-        matches |> List.map ( \m -> getAxB m.submatches )
-
-
 decompressV1: String -> String -> String
 decompressV1 input output =
     case input of
