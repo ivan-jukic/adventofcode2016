@@ -15,7 +15,7 @@ my understanding of the Elm language, and maybe even help some of you guys who a
     I'm not sure if Elm is the right tool for this kind of problems, or it was my lack of experience with it, but I had to rewrite the code in
     something that was more familiar, so I've used C#.
 
-    I tried to optimize the code as much as possible to get the result as quick as possible. For brute force approach, the number of possible
+    I tried to optimize the code as much as possible to get the result as quickly as possible. For brute force approach, the number of possible
     states is huge, and it would take some time to go through them all, so to avoid this, the first optimization was to prune already visited states.
     Also, a hint I've received, ignore the type of the elements when comparing states, and consider them the same as long as the element pairs are on 
     the same floors.
