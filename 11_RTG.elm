@@ -191,10 +191,10 @@ getNextPossibleStates processed newStates states =
                             Trampoline.evaluate <| ( getCombinations currentFloorItems currentFloorItems [] )
 
                         ( newUpStates, upProcessed ) =
-                            Trampoline.evaluate <| ( s |> takeToFloor ( s.floor + 1 ) currentFloorItems combinations processed [] )
+                            Trampoline.evaluate <| ( s |> takeToFloor ( s.floor + 1 ) currentFloorItems combinations processed [] False )
                         
                         ( newDownStates, newProcessed ) =
-                            Trampoline.evaluate <| ( s |> takeToFloor ( s.floor - 1 ) currentFloorItems combinations upProcessed [] )
+                            Trampoline.evaluate <| ( s |> takeToFloor ( s.floor - 1 ) currentFloorItems combinations upProcessed [] False )
 
                         newUpDownStates =
                             ( newUpStates ++ newDownStates ) |> List.map
@@ -203,8 +203,8 @@ getNextPossibleStates processed newStates states =
                         Trampoline.jump ( \_ -> getNextPossibleStates newProcessed ( newStates ++ newUpDownStates ) otherStates )
 
 
-takeToFloor: Int -> List Item -> List ( List Item ) -> List String -> List State -> State -> Trampoline ( List State, List String )
-takeToFloor nf floorItems combinations processed newStates s =
+takeToFloor: Int -> List Item -> List ( List Item ) -> List String -> List State -> Bool -> State -> Trampoline ( List State, List String )
+takeToFloor nf floorItems combinations processed newStates movedTwo s =
     case ( Dict.get nf s.locations ) of
         Nothing ->
             Trampoline.done ( newStates, processed )
@@ -214,16 +214,31 @@ takeToFloor nf floorItems combinations processed newStates s =
                 [] ->
                     Trampoline.done ( newStates, processed )
                 comb :: otherComb ->
-                    let
-                        ( cfItems, nfItems ) =
-                            ( floorItems |> List.filter ( \i -> not ( List.member i comb ) )
-                            , nextFloorItems ++ comb
-                            )
+                    case ( List.length comb == 1 ) && movedTwo of
+                        True ->
+                            Trampoline.jump ( \_ -> takeToFloor nf floorItems otherComb processed newStates movedTwo s )
+                        
+                        False ->
+                            let
+                                ( cfItems, nfItems ) =
+                                    ( floorItems |> List.filter ( \i -> not ( List.member i comb ) )
+                                    , nextFloorItems ++ comb
+                                    )
 
-                        ( ns, newProcessed ) =
-                            addNewState s.floor cfItems nf nfItems s.depth processed s.locations
-                    in
-                        Trampoline.jump ( \_ -> takeToFloor nf floorItems otherComb newProcessed ( newStates ++ ns ) s )
+                                ( ns, newProcessed ) =
+                                    addNewState s.floor cfItems nf nfItems s.depth processed s.locations
+
+                                newMovedTwo = 
+                                    --False
+                                    {--}
+                                    case not movedTwo && (List.length ns > 0) && (List.length comb == 2) && (nf > s.floor) of
+                                        True ->
+                                            True
+                                        False ->
+                                            movedTwo
+                                    --}
+                            in
+                                Trampoline.jump ( \_ -> takeToFloor nf floorItems otherComb newProcessed ( newStates ++ ns ) newMovedTwo s )
 
 
 addNewState: Int -> List Item -> Int -> List Item -> Int -> List String -> Dict Int ( List Item ) -> ( List State, List String )
@@ -285,9 +300,9 @@ getCombinations floorItems fullItems combos =
 
 isValidFloor: List Item -> Bool
 isValidFloor floorItems =
-    case ( floorItems |> hasGenerators ) of
+    case ( Trampoline.evaluate <| ( floorItems |> hasGenerators False ) ) of
         True ->
-            floorItems |> List.foldl
+            Trampoline.evaluate <| ( floorItems |> foldlT
                 ( \i b ->
                     case b of
                         True ->
@@ -300,7 +315,7 @@ isValidFloor floorItems =
                                 _ -> b
                         False ->
                             b
-                ) True
+                ) True )
         False ->
             True
 
@@ -313,7 +328,7 @@ encodeState f dict =
                 ( \( i, items ) ->
                     let
                         factor =
-                            List.foldl ( \item c -> Bitwise.or c ( itemWeights item ) ) 0 items
+                            Trampoline.evaluate ( foldlT ( \item c -> Bitwise.or c ( itemWeights item ) ) 0 items )
                     in
                         ( toString i ) ++ ":" ++ ( toString factor )
                 )
@@ -321,10 +336,17 @@ encodeState f dict =
         )
 
 
-hasGenerators: List Item -> Bool
-hasGenerators items =
-    items |> List.any
-        ( \i -> List.member i gensOnly )
+hasGenerators: Bool -> List Item -> Trampoline Bool
+hasGenerators final items =
+    case items of
+        [] ->
+            Trampoline.done final
+        i :: rest ->
+            case ( List.member i gensOnly ) of
+                True ->
+                    Trampoline.done True
+                False ->
+                   Trampoline.jump ( \_ -> hasGenerators final rest )
 
 
 floorHasGenerator: Item -> List Item -> Bool
@@ -339,14 +361,23 @@ isFinalState cf final s =
             Trampoline.done final
         True ->
             case cf < maxFloor of
-                True ->
-                    case ( Dict.get cf s.locations ) of
-                        Just items ->
-                            Trampoline.jump ( \_ -> isFinalState ( cf + 1 ) ( List.length items == 0 ) s )
-                        Nothing ->
-                            Trampoline.done final
                 False ->
                     Trampoline.done final
+                True ->
+                    case ( Dict.get cf s.locations ) of
+                        Nothing ->
+                            Trampoline.done final
+                        Just items ->
+                            Trampoline.jump ( \_ -> isFinalState ( cf + 1 ) ( List.length items == 0 ) s )
+
+
+foldlT : (a -> b -> b) -> b -> List a -> Trampoline b
+foldlT f acc xs =
+    case xs of
+        [] ->
+            Trampoline.done acc
+        x::xs ->
+            Trampoline.jump (\_ -> foldlT f (f x acc) xs)
 
 
 -- VIEW
