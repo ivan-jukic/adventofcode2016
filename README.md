@@ -24,7 +24,7 @@ my understanding of the Elm language, and maybe even help some of you guys who a
     that takes effect only when we're already close to the solution, but it seemed like a reasonable thing to test. It is also in conflict with
     the next optimization, and may not be neccessary at all.
 
-    The third optimization is adding a fitness function, which returns a fitnes value and assigns it to each state (domain [0, 1]).
+    The third optimization is adding a fitness function, which returns a fitness value and assigns it to each state (range [0.0, 1.0]).
     Fitness of a certain state depends on the distribution of the elements through the floors. The more elements are in the upper floors, the higher will
     be the fitness. We try to eliminate some of the states if their fitness is below a certain amount. This amount is the average fitness of states on a specific
     depth (concept borrowed from genetic programming, more fit states survive).
