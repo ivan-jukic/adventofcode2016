@@ -33,3 +33,16 @@ my understanding of the Elm language, and maybe even help some of you guys who a
     of the puzzle in less than a second.
     
     Without this fitness optimization it takes about 10 - 15 seconds to get both part solutions (i7-4770K).
+
+
+- ### Day 14 - Update
+    [http://adventofcode.com/2016/day/14](http://adventofcode.com/2016/day/14)
+
+    This challenge wasn't as difficult to implement, as it was to realize what is actually required. I feel like it could have been explained better.
+    The description can be interpreted in multiple ways, so it is on developer to impliclity figure out what is required. I wonder if this was by design(?).
+
+    In part 1, the discription explicitly says that hash is a key only if it contains three of the same character in a row, and one of the next 1000 hashes
+    in the stream contains that same character five times in a row. But implicitly you need to take into consideration as possible pad any hash with three or more
+    same characters in sequence. Also hash with five or more same characters in row used to validate previously found possible hashes, is itself a possible pad.
+
+    Part 2, also holds a catch. It asks you to hash input 2016, but you need to hash first hash 2016 times, or raw input a total of 2017 times.
