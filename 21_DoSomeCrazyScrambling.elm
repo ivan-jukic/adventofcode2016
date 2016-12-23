@@ -54,7 +54,10 @@ update msg model =
         NextInstruction ->
             case model.cmds of
                 cmd :: other ->
-                    ( { model | pass = ( model.pass |> processCmd cmd ), cmds = other }, Cmd.none )
+                    let
+                        d = log "cmd" ( cmd, model.pass )
+                    in
+                        ( { model | pass = ( model.pass |> processCmd cmd ), cmds = other }, Cmd.none )
                 [] ->
                     ( model, Cmd.none )
             
@@ -83,57 +86,101 @@ processCmd cmd pass =
 swapPosition: Int -> Int -> String -> String
 swapPosition x y pass =
     let
+        swap =
+            ( \i l p ->
+                ( p |> String.left i ) ++ l ++ ( p |> String.dropLeft ( i + 1 ) )
+            )
+
         ( lx, ly ) =
             ( pass |> String.dropLeft x |> String.left 1
             , pass |> String.dropLeft y |> String.left 1
             )
-
-        newPass =
-            ( pass |> String.left y ) ++ lx ++ ( pass |> String.dropLeft ( y + 1 ) )
-
-        d = log "swap position" ( x, y, lx, ly, pass, newPass )
     in
-        pass
+            pass
+                |> swap y lx
+                |> swap x ly
 
 
 swapLetter: String -> String -> String -> String
 swapLetter x y pass =
-    let
-        d = log "swap letter" ( x, y )
-    in
-        pass
+    pass
+        |> String.split ""
+        |> List.map
+            ( \c ->
+                if c == x then y
+                else if c == y then x
+                else c
+            )
+        |> String.join ""
 
 
 rotatePass: String -> Int -> String -> String
 rotatePass dir steps pass =
     let
-        d = log "rotate" ( dir, steps )
+        strlen =
+            String.length pass
+
+        remainingSteps =
+            steps % strlen
     in
-        pass
+        case dir of
+            "left" ->
+                ( pass |> String.dropLeft remainingSteps ) ++ ( pass |> String.left remainingSteps )
+
+            "right" ->
+                ( pass |> String.right remainingSteps ) ++ ( pass |> String.dropRight remainingSteps )
+
+            _ ->
+                pass
 
 
 rotateBasedOnLetter: String -> String -> String
 rotateBasedOnLetter letter pass =
     let
-        d = log "rotate based on letter" letter
+        idx =
+            pass
+                |> String.split ""
+                |> List.indexedMap (,)
+                |> List.foldl
+                    ( \( i, c ) found ->
+                        case found == -1 of
+                            True ->
+                                if c == letter then i else found
+                            False ->
+                                found
+                    ) -1
     in
-        pass
+        case idx == -1 of
+            True ->
+                pass
+            
+            False ->
+                pass |> rotatePass  "right" ( 1 + idx + ( if idx > 3 then 1 else 0 ) )
 
 
 reverseSubPass: Int -> Int -> String -> String
 reverseSubPass x y pass =
     let
-        d = log "reverse from" ( x, y )
+        reverseSection =
+            pass
+                |> String.dropLeft x
+                |> String.left ( y - x + 1 )
+                |> String.reverse            
     in
-        pass
+        ( pass |> String.left x ) ++ reverseSection ++ ( pass |> String.dropLeft ( y + 1 ) )
 
 
 moveTo: Int -> Int -> String -> String
 moveTo x y pass =
     let
-        d = log "move from position to position" ( x, y )
+        char =
+            pass |> String.dropLeft x |> String.left 1
+
+        intermediatePass =
+            ( pass |> String.left x ) ++ ( pass |> String.dropLeft ( x + 1 ) )
+
     in
-        pass
+        ( intermediatePass |> String.left y ) ++ char ++ ( intermediatePass |> String.dropLeft y )
 
 
 strToInt: String -> Int
@@ -154,12 +201,13 @@ view model =
 -- INPUT
 startingCode: String
 startingCode =
-    "abcde"
-    -- "abcdefgh"
+    --"abcde"
+    "abcdefgh"
 
 
 input: String
 input =
+{-- }
     """swap position 4 with position 0
 swap letter d with letter b
 reverse positions 0 through 4
@@ -169,7 +217,8 @@ move position 3 to position 0
 rotate based on position of letter b
 rotate based on position of letter d
 """
-{-- }
+--}
+{--}
     """rotate left 2 steps
 rotate right 0 steps
 rotate based on position of letter a
