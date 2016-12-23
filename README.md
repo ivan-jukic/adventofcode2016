@@ -46,3 +46,9 @@ my understanding of the Elm language, and maybe even help some of you guys who a
     same characters in sequence. Also hash with five or more same characters in row used to validate previously found possible hashes, is itself a possible pad.
 
     Part 2, also holds a catch. It asks you to hash input 2016, but you need to hash first hash 2016 times, or raw input a total of 2017 times.
+
+- ### Day 19 Part 2 - Update
+    [http://adventofcode.com/2016/day/19](http://adventofcode.com/2016/day/19)
+
+    Tried to implement a simulation in elm, but unfortunately elm doesn't agree with big lists. In the end I took mathematical approach which does not
+    require any implementation. Part 1 does do a simulation, but it involves string manipulation, which doesn't make it a really clean solution.
